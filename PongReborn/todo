@@ -1,0 +1,8 @@
+if ball collides with any object execpt left and right wall:
+    move in the opposite direction
+
+if ball hits left wall || right wall:
+    award point to opposite player
+
+if Oncollision is called:
+    increase speed

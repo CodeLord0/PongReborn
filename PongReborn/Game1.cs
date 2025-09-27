@@ -18,6 +18,9 @@ public class Game1 : Game
     public Player playerOne;
     public Player playerTwo;
     public PlayerController playerController;
+    public Texture2D ballSprite;
+    Ball ball;
+
 
     
     //private Player playerTwo;
@@ -50,11 +53,14 @@ public class Game1 : Game
         background = Content.Load<Texture2D>("Board");
         playerOneSprite = Content.Load<Texture2D>("Player");
         playerTwoSprite = Content.Load<Texture2D>("Computer");
+        ballSprite = Content.Load<Texture2D>("Ball");
 
         //instanciations
         playerOne = new Player(playerOneSprite, new Vector2(67, 117));
         playerTwo = new Player(playerTwoSprite, new Vector2(769, 220));
         playerController = new PlayerController(playerOne, playerTwo);
+        ball = new Ball(ballSprite);
+        
 
         // TODO: use this.Content to load your game content here
     }
@@ -66,6 +72,7 @@ public class Game1 : Game
 
         // TODO: Add your update logic here
         playerController.playerConUpdate(gameTime);
+        ball.BallUpdate(gameTime);
 
         base.Update(gameTime);
     }
@@ -79,6 +86,7 @@ public class Game1 : Game
         _spriteBatch.Draw(background,Vector2.Zero, Color.White);
         playerOne.Draw(_spriteBatch);
         playerTwo.Draw(_spriteBatch);
+        ball.Draw(_spriteBatch);
         _spriteBatch.End();
 
         base.Draw(gameTime);
