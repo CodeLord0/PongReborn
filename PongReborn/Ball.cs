@@ -37,23 +37,23 @@ public class Ball
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         if (hasRun)
         {
-            position.X = rand.Next(100, 400);
-            position.Y = rand.Next(100, 300);
+            position.X = rand.Next(2) * 2  -1; // sets x vector to a position betwen -1 or 1
+            position.Y = rand.Next(455);
             hasRun = false;
         }
    
         position += speed * dt;
-        if (position.Y <= 0 || position.Y >= 455 || position.X <= 0 || position.X >= 802)
+
+        // invert the axis of the ball
+        if (position.Y <= 0 || position.Y >= 455)
         {
-            speed *= -2;
-            
+            position.Y *= -1
+        }
 
-            
-
+        if(position.X <= 0 || position.X >= 802){
+            position.X *= -1
         }
     
-    
-
     }
 
 

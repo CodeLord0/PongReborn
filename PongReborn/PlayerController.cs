@@ -29,6 +29,7 @@ public class PlayerController
 
     }
 
+    // input handler for player 1
     public void PlayerOneDirection()
     {
 
@@ -44,6 +45,7 @@ public class PlayerController
         }
 
     }
+    // input handler for player 2
     public void PlayerTwoDirection()
     {
 
