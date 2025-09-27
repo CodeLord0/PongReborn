@@ -14,13 +14,15 @@ namespace PongReborn;
 
 public class Ball
 {
-    private Vector2 speed = new Vector2(180,180);
+    private float speed = 180f;
     
     private Vector2 position;
-    //static  public Vector2 defaultPosition = new Vector2(401,228);
+    Vector2 direction;
+    public Vector2 velocity = new Vector2(180,180);
     private Texture2D ballTexture;
     
     const int radius = 15;
+    
     bool state = true;
     private bool hasRun = true;
     private static Random rand = new Random();
@@ -30,30 +32,51 @@ public class Ball
     {
         ballTexture = _ballSprite;
     }
-    
+
 
     public void BallUpdate(GameTime gameTime)
     {
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         if (hasRun)
         {
-            position.X = rand.Next(2) * 2  -1; // sets x vector to a position betwen -1 or 1
-            position.Y = rand.Next(455);
+            position.X = rand.Next(802); // sets x vector to a position betwen -1 or 1
+            position.Y = rand.Next(0,455);
             hasRun = false;
         }
-   
-        position += speed * dt;
+
+
 
         // invert the axis of the ball
-        if (position.Y <= 0 || position.Y >= 455)
+        position.X += velocity.X *dt;
+        position.Y += velocity.Y* dt;
+
+        //top screen
+        if (position.Y <= 0)
         {
-            position.Y *= -1
+            velocity.Y = -velocity.Y;
+            
         }
 
-        if(position.X <= 0 || position.X >= 802){
-            position.X *= -1
+        //bottom screen
+        if (position.Y >= 455)
+        {
+            velocity.Y = -velocity.Y;
         }
-    
+        //left screen
+        if (position.X <= 0)
+        {
+            velocity.X = -velocity.X;
+        }
+        //right screen
+        if (position.X >= 802)
+        {
+            velocity.X = -velocity.X;
+        }
+  
+        
+        
+
+        
     }
 
 
