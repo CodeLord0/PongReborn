@@ -86,7 +86,7 @@ public class Game1 : Game
 
     protected override void Update(GameTime gameTime)
     {
-        while(timer == 0)
+        while(timer <= 1)
         {
             
         }
