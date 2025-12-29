@@ -12,7 +12,7 @@ public class PlayerController
     private Player player1;
     private Player player2;
     private float dt;
-    private KeyboardState kState;
+    public KeyboardState kState;
 
     public PlayerController(Player p1, Player p2)
     {
@@ -33,12 +33,11 @@ public class PlayerController
     public void PlayerOneDirection()
     {
 
-        if (kState.IsKeyDown(Keys.W) && player1.position.Y >= 120)
+        if (kState.IsKeyDown(Keys.W) && player1.position.Y >= 167)
         {
             player1.position.Y -= Player.speed * dt;
-            System.Console.WriteLine(player2.position.Y );
-
         }
+        
         if (kState.IsKeyDown(Keys.S) && player1.position.Y<= 455)
         {
             player1.position.Y += Player.speed * dt;
@@ -49,7 +48,7 @@ public class PlayerController
     public void PlayerTwoDirection()
     {
 
-        if (kState.IsKeyDown(Keys.I) && player2.position.Y >= 120)
+        if (kState.IsKeyDown(Keys.I) && player2.position.Y >= 167)
         {
             player2.position.Y -= Player.speed * dt;
         }

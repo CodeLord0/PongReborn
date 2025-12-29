@@ -61,6 +61,25 @@
 /processorParam:TextureFormat=Color
 /build:Computer.png
 
+#begin File.spritefont
+/importer:FontDescriptionImporter
+/processor:LocalizedFontProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:File.spritefont;gameFont.spritefont
+
+#begin gameSong.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:gameSong.mp3
+
+#begin paddlesound.mp3
+/importer:Mp3Importer
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:paddlesound.mp3
+
 #begin Player.png
 /importer:TextureImporter
 /processor:TextureProcessor

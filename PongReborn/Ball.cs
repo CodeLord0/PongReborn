@@ -14,18 +14,20 @@ namespace PongReborn;
 
 public class Ball
 {
-    private float speed = 180f;
+
     
-    private Vector2 position;
-    Vector2 direction;
-    public Vector2 velocity = new Vector2(180,180);
-    private Texture2D ballTexture;
+    public Vector2 position;
+    //Vector2 direction;
+    public Vector2 velocity = new(250,250);
+    private readonly Texture2D ballTexture;
     
     const int radius = 15;
     
-    bool state = true;
     private bool hasRun = true;
     private static Random rand = new Random();
+    public Rectangle Hitbox => new Rectangle((int)position.X - radius, (int)position.Y - radius, 30, 30);
+
+
 
     
     public Ball(Texture2D _ballSprite)
@@ -39,8 +41,8 @@ public class Ball
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
         if (hasRun)
         {
-            position.X = rand.Next(802); // sets x vector to a position betwen -1 or 1
-            position.Y = rand.Next(0,455);
+            position.X = 401;//rand.Next(802); // sets x vector to a position betwen -1 or 1
+            position.Y = 227;//rand.Next(0,455);
             hasRun = false;
         }
 
@@ -51,7 +53,7 @@ public class Ball
         position.Y += velocity.Y* dt;
 
         //top screen
-        if (position.Y <= 0)
+        if (position.Y <= 57)
         {
             velocity.Y = -velocity.Y;
             
@@ -61,24 +63,22 @@ public class Ball
         if (position.Y >= 455)
         {
             velocity.Y = -velocity.Y;
+        
         }
         //left screen
-        if (position.X <= 0)
+        if (position.X <= -100 ||position.X >= 900)
         {
-            velocity.X = -velocity.X;
+            position.X  = 401;
         }
-        //right screen
-        if (position.X >= 802)
-        {
-            velocity.X = -velocity.X;
-        }
-  
-        
-        
 
+
+    }
+    public void InvertAxis()
+    {
+                
+        velocity.X = -velocity.X;
         
     }
-
 
 
     public void Draw(SpriteBatch spriteBatch)
