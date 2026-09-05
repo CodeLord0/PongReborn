@@ -1,14 +1,11 @@
-﻿using System;
-using System.Data.Common;
-using System.Numerics;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Vector2 = Microsoft.Xna.Framework.Vector2;
 using Microsoft.Xna.Framework.Media;
 using Microsoft.Xna.Framework.Audio;
+using System;
+
 namespace PongReborn;
 
 public class Game1 : Game
@@ -26,7 +23,7 @@ public class Game1 : Game
     public Texture2D ballSprite;
     public Ball ball;
     public SpriteFont gameFont;
-    public double timer = 80;
+    public double timer = 60;
     public double countdown;
     public int playerOneScore;
     public int playerTwoScore;
@@ -34,10 +31,13 @@ public class Game1 : Game
     public SoundEffect effect;
     public bool gamePaused;
 
+    // Tracks whether the ball was overlapping each paddle last frame, so a
+    // bounce only fires once per contact instead of every frame of overlap.
+    private bool wasCollidingP1;
+    private bool wasCollidingP2;
 
-    
-    //private Player playerTwo;
-
+    // Amount added to ball velocity on each paddle bounce (clamped in Ball.AddBounceSpeed).
+    private static readonly Vector2 BounceSpeedBoost = new(15, 15);
 
     public Game1()
     {
@@ -47,16 +47,10 @@ public class Game1 : Game
         _graphics.PreferredBackBufferWidth = 802;
         _graphics.PreferredBackBufferHeight = 502;
         _graphics.ApplyChanges();
-
     }
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
-
-
-        //playerTwo = new Player()
-
         base.Initialize();
     }
 
@@ -73,51 +67,49 @@ public class Game1 : Game
         effect = Content.Load<SoundEffect>("paddlesound");
         backSong = Content.Load<Song>("gameSong");
         MediaPlayer.Play(backSong);
-        MediaPlayer.Volume = 0.4f;
-        //instanciations
+        MediaPlayer.Volume = 1.0f;
+
+        // instantiations
         playerOne = new Player(playerOneSprite, new Vector2(67, 117));
         playerTwo = new Player(playerTwoSprite, new Vector2(769, 220));
         playerController = new PlayerController(playerOne, playerTwo);
         ball = new Ball(ballSprite);
-        
-
-        // TODO: use this.Content to load your game content here
     }
 
     protected override void Update(GameTime gameTime)
     {
-        while(timer <= 1)
+        if (timer >= 1)
         {
-            
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
+
+            playerController.playerConUpdate(gameTime);
+            ball.BallUpdate(gameTime);
+
+            // Discrete, one-shot scoring: award exactly one point per goal,
+            // then reset the ball. No more fractional per-frame score growth.
+            if (ball.position.X <= 0)
+            {
+                playerTwo.playerScore += 1;
+                ball.Reset();
+                ResetCollisionState();
+            }
+            else if (ball.position.X >= 802)
+            {
+                playerOne.playerScore += 1;
+                ball.Reset();
+                ResetCollisionState();
+            }
+
+            HandleBallCollisions();
+
+            timer -= gameTime.ElapsedGameTime.TotalSeconds;
         }
-
-
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-
-        // TODO: Add your update logic here
-        playerController.playerConUpdate(gameTime);
-        ball.BallUpdate(gameTime);
-
-        //player scores
-        if (ball.position.X <= 0)
+        else
         {
-            playerTwo.playerScore += gameTime.ElapsedGameTime.TotalSeconds*2;
+            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
+                Exit();
         }
-
-        if(ball.position.X >= 802)
-        {
-            playerOne.playerScore += gameTime.ElapsedGameTime.TotalSeconds*2;
-        }
-        if(OnBallCollsiion() == true)
-        {
-            ball.InvertAxis();
-
-        }
-        timer -= gameTime.ElapsedGameTime.TotalSeconds;
-
-
-
 
         base.Update(gameTime);
     }
@@ -126,67 +118,73 @@ public class Game1 : Game
     {
         GraphicsDevice.Clear(Color.Black);
 
-        // TODO: Add your drawing code here
         _spriteBatch.Begin();
-        
-        _spriteBatch.Draw(background,new Vector2(0,47), Color.White);
+
+        _spriteBatch.Draw(background, new Vector2(0, 47), Color.White);
         playerOne.Draw(_spriteBatch);
         playerTwo.Draw(_spriteBatch);
-
 
         _spriteBatch.Draw(
             scoreBar,
             Vector2.Zero,
-            null,                 // source rectangle
-            Color.White                   // layerDepth
+            null,
+            Color.White
         );
 
         _spriteBatch.Draw(
             scoreBarTwo,
             new Vector2(461, 0),
-            null,                 // source rectangle
-            Color.Blue,          // color
-            0f,                   // rotation
-            Vector2.Zero,         // origin
-            1f,                   // scale
-            SpriteEffects.FlipHorizontally, // effects
-            0f                    // layerDepth
+            null,
+            Color.Blue,
+            0f,
+            Vector2.Zero,
+            1f,
+            SpriteEffects.FlipHorizontally,
+            0f
         );
-
 
         ball.Draw(_spriteBatch);
 
-        _spriteBatch.DrawString(gameFont, "TIME",new Vector2(370,0),Color.DarkGray,0f,Vector2.Zero,0.3f,SpriteEffects.None,0f);
-        _spriteBatch.DrawString(gameFont, Math.Floor(timer).ToString(),new Vector2(382,20),Color.White,0f,Vector2.Zero,0.4f,SpriteEffects.None,0f);
-        _spriteBatch.DrawString(gameFont, Math.Floor(playerOne.playerScore).ToString(),new Vector2(170,10),Color.White,0f,Vector2.Zero,0.4f,SpriteEffects.None,0f);
-        _spriteBatch.DrawString(gameFont, Math.Floor(playerTwo.playerScore).ToString(),new Vector2(610,10),Color.White,0f,Vector2.Zero,0.4f,SpriteEffects.None,0f);
-
+        _spriteBatch.DrawString(gameFont, "TIME", new Vector2(370, 0), Color.DarkGray, 0f, Vector2.Zero, 0.3f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(gameFont, Math.Floor(timer).ToString(), new Vector2(382, 20), Color.White, 0f, Vector2.Zero, 0.4f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(gameFont, Math.Floor(playerOne.playerScore).ToString(), new Vector2(170, 10), Color.White, 0f, Vector2.Zero, 0.4f, SpriteEffects.None, 0f);
+        _spriteBatch.DrawString(gameFont, Math.Floor(playerTwo.playerScore).ToString(), new Vector2(610, 10), Color.White, 0f, Vector2.Zero, 0.4f, SpriteEffects.None, 0f);
+        
         _spriteBatch.End();
-
 
         base.Draw(gameTime);
     }
-    
-    public bool OnBallCollsiion()
+
+    // Edge-triggered collision handling: only bounces the ball on the frame
+    // contact *begins*, instead of every frame the hitboxes overlap. This
+    // stops the velocity explosion that happened when InvertAxis() and the
+    // speed boost fired repeatedly during a single overlap.
+    private void HandleBallCollisions()
     {
-        
-        if(playerOne.Hitbox.Intersects(ball.Hitbox))
-        {
-            Console.WriteLine("true");
-            ball.velocity += new Vector2(15,15);
-            effect.Play();
-            return true;
+        bool collidingP1 = playerOne.Hitbox.Intersects(ball.Hitbox);
+        bool collidingP2 = playerTwo.Hitbox.Intersects(ball.Hitbox);
 
-        }
-        if(playerTwo.Hitbox.Intersects(ball.Hitbox))
+        if (collidingP1 && !wasCollidingP1)
         {
-            Console.WriteLine("true");
-            ball.velocity += new Vector2(15,15);
+            ball.InvertAxis();
+            ball.AddBounceSpeed(BounceSpeedBoost);
             effect.Play();
-            return true;
-
         }
-        return false;
+
+        if (collidingP2 && !wasCollidingP2)
+        {
+            ball.InvertAxis();
+            ball.AddBounceSpeed(BounceSpeedBoost);
+            effect.Play();
+        }
+
+        wasCollidingP1 = collidingP1;
+        wasCollidingP2 = collidingP2;
     }
-    
+
+    private void ResetCollisionState()
+    {
+        wasCollidingP1 = false;
+        wasCollidingP2 = false;
+    }
 }
