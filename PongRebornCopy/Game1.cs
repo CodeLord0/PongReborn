@@ -12,7 +12,7 @@ using System;
 using System.Threading;
 
 
-namespace PongReborn;
+namespace PongRebornCopy;
 
 public class Game1 : Game
 {
