@@ -1,3 +1,7 @@
 {
-    "dotnet.defaultSolution": "PongReborn.sln"
+    "dotnet.defaultSolution": "PongReborn.sln",
+    "csharp-dev-tools.solutionViewer.selectedWorkspaceSolutions": [
+        "PongReborn.sln",
+        "PongReborn/PongReborn.sln"
+    ]
 }

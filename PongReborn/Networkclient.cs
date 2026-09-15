@@ -1,15 +1,16 @@
+using System;
 using System.Net;
+using System.Threading;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using PongReborn.Shared;
-using System;
-using System.Threading;
 
 namespace PongReborn;
 
 public class NetworkClient
 {
     private NetManager client;
+    
     private readonly EventBasedNetListener listener = new();
     private NetPeer? serverPeer;
 
@@ -23,7 +24,10 @@ public class NetworkClient
     // Raised when a goal packet arrives, so Game1 can play a sound / reset visuals if needed.
     public event Action<int>? OnGoalScored;
 
+    public double time;
+
     public bool IsConnected => serverPeer != null && serverPeer.ConnectionState == ConnectionState.Connected;
+    public bool isGamePlaying = false;
 
     public void Connect(string ip, int port)
     {
@@ -60,6 +64,7 @@ public class NetworkClient
         writer.Put((byte)PacketType.PlayerInput);
         packet.Serialize(writer);
         serverPeer.Send(writer, DeliveryMethod.Sequenced); // only the latest input matters
+        
     }
 
     private void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channel, DeliveryMethod method)
@@ -97,6 +102,23 @@ public class NetworkClient
                 assign.Deserialize(reader);
                 MyPlayerNumber = assign.PlayerNumber;
                 Console.WriteLine("Assigned as player " + MyPlayerNumber);
+                break;
+
+            case PacketType.CountdownPacket:
+                var timer = new CountdownPacket();
+                timer.Deserialize(reader);
+                time = timer.SecondsRemaining;
+                Console.WriteLine(time);
+                break;
+
+            // Inside your packet-reading switch or router on the client:
+            case PacketType.GameStartPacket:
+                var gameStartPacket = new GameStartPacket();
+                gameStartPacket.Deserialize(reader);
+
+                // Switch your game state to active play
+                isGamePlaying = true;
+                Console.WriteLine("Game has officially started!");
                 break;
         }
 

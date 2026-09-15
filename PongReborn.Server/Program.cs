@@ -1,9 +1,12 @@
+using System;
+using System.Diagnostics;
 using System.Net;
+using System.Runtime.InteropServices;
+using System.Threading;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using PongReborn.Shared;
-using System;
-using System.Threading;
+
 
 namespace PongReborn.Server;
 
@@ -14,6 +17,9 @@ public class Program
     private const float MaxBallSpeed = 700f;
     private const float PaddleSpeed = 200f;
     private const float BallRadius = 15f;
+    private static Stopwatch stopwatch = Stopwatch.StartNew();
+    private static double lastTime;
+    private static double countdownTimer = 11;
 
     private static NetManager server = null!;
     private static readonly EventBasedNetListener listener = new();
@@ -55,6 +61,7 @@ public class Program
                 Console.WriteLine($"Extra connection rejected: {peer}");
                 peer.Disconnect();
             }
+
         };
 
         listener.PeerDisconnectedEvent += (peer, info) =>
@@ -97,6 +104,8 @@ public class Program
             Thread.Sleep(15); // ~66 ticks/sec
         }
     }
+
+
 
     private static void OnPlayerInput(PlayerInputPacket packet, NetPeer peer)
     {
@@ -153,6 +162,9 @@ public class Program
             ResetBall();
         }
 
+        UpdateCountdown();
+
+
         BroadcastState();
     }
 
@@ -170,7 +182,23 @@ public class Program
             ballVelY *= scale;
         }
     }
+    private static void UpdateCountdown()
+    {
+        
+        double currentTime = stopwatch.Elapsed.TotalSeconds;
+        double dt = currentTime - lastTime;
+        lastTime = currentTime;
 
+        countdownTimer -= dt;
+
+        if (countdownTimer <= 0)
+        {
+            countdownTimer = 0;
+            BroadcastGameStart();
+        }
+        BroadcastTimer(countdownTimer);
+
+    }
     private static bool RectsIntersect(float ax, float ay, float aw, float ah, float bx, float by, float bw, float bh)
     {
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
@@ -188,6 +216,28 @@ public class Program
         wasCollidingP2 = false;
     }
 
+    private static void BroadcastTimer(double time)
+    {
+        var GameTimerPacket = new CountdownPacket{SecondsRemaining = time};
+        var GameTimerWriter = new NetDataWriter();
+        GameTimerWriter.Put((byte)PacketType.CountdownPacket);
+        GameTimerPacket.Serialize(GameTimerWriter);
+        server.SendToAll(GameTimerWriter,DeliveryMethod.ReliableOrdered);
+
+    }
+
+    private static void BroadcastGameStart()
+    {
+        var startPacket = new GameStartPacket();
+        var writer = new NetDataWriter();
+        
+        // Make sure you have a unique byte ID for this packet in your PacketType enum!
+        writer.Put((byte)PacketType.GameStartPacket);
+        startPacket.Serialize(writer);
+        
+        server.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+        Console.WriteLine("Game start packet broadcasted to all clients.");
+    }
     private static void BroadcastState()
     {
         var ballPacket = new BallStatePacket { PositionX = ballX, PositionY = ballY, VelocityX = ballVelX, VelocityY = ballVelY };

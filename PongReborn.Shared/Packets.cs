@@ -37,6 +37,7 @@ public struct PaddleStatePacket : INetSerializable
     public void Serialize(NetDataWriter writer)
     {
         writer.Put(Player1Y);
+        
         writer.Put(Player2Y);
     }
 
@@ -104,6 +105,35 @@ public struct AssignPlayerPacket : INetSerializable
     }
 }
 
+public struct CountdownPacket : INetSerializable
+{
+    public double SecondsRemaining; // 1 or 2
+
+    public void Serialize(NetDataWriter writer)
+    {
+        writer.Put(SecondsRemaining);
+    }
+
+    public void Deserialize(NetDataReader reader)
+    {
+        SecondsRemaining = reader.GetDouble();
+    }
+}
+
+public struct GameStartPacket : INetSerializable
+{
+    public int Start; // 1 or 2
+
+    public void Serialize(NetDataWriter writer)
+    {
+        writer.Put(Start);
+    }
+
+    public void Deserialize(NetDataReader reader)
+    {
+        Start = reader.GetInt();
+    }
+}
 // Packet type IDs so both sides agree on how to interpret the first byte.
 public enum PacketType : byte
 {
@@ -111,5 +141,8 @@ public enum PacketType : byte
     PaddleState = 2,
     PlayerInput = 3,
     GoalScored = 4,
-    AssignPlayer = 5
+    AssignPlayer = 5,
+    CountdownPacket = 6,
+    GameStartPacket = 7
+
 }
