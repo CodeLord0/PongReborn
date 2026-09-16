@@ -134,7 +134,24 @@ public struct GameStartPacket : INetSerializable
         Start = reader.GetInt();
     }
 }
+
+public struct ClockPacket : INetSerializable
+{
+    public double Time; // 1 or 2
+
+    public void Serialize(NetDataWriter writer)
+    {
+        writer.Put(Time);
+    }
+
+    public void Deserialize(NetDataReader reader)
+    {
+        Time = reader.GetDouble();
+    }
+}
 // Packet type IDs so both sides agree on how to interpret the first byte.
+
+
 public enum PacketType : byte
 {
     BallState = 1,
@@ -143,6 +160,7 @@ public enum PacketType : byte
     GoalScored = 4,
     AssignPlayer = 5,
     CountdownPacket = 6,
-    GameStartPacket = 7
+    GameStartPacket = 7,
+    ClockPacket = 8
 
 }

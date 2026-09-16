@@ -17,9 +17,13 @@ public class Program
     private const float MaxBallSpeed = 700f;
     private const float PaddleSpeed = 200f;
     private const float BallRadius = 15f;
-    private static Stopwatch stopwatch = Stopwatch.StartNew();
-    private static double lastTime;
-    private static double countdownTimer = 11;
+    private static double clock = 120D; // 2 minutes in seconds
+    private static Stopwatch stopwatch = new();
+    private static Stopwatch matchStopwatch = new();
+    private static double lastTime = stopwatch.Elapsed.TotalSeconds;
+    private static double lastMatchTime = matchStopwatch.Elapsed.TotalSeconds;
+    private static float countdownTimer = 11f;
+    private static bool gameStarted;
 
     private static NetManager server = null!;
     private static readonly EventBasedNetListener listener = new();
@@ -124,9 +128,30 @@ public class Program
 
     private static void Tick(float dt)
     {
-        if (dt <= 0 || dt > 0.25f) return; // guard against huge/negative dt spikes (e.g. debugger pause)
+        if (player1Peer == null || player2Peer == null)
+        {
+            // Not enough players connected to play
+            return;
+        }
+        if (!gameStarted)
+        {
+            countdownTimer -= dt;
 
-        // Apply input -> paddle movement (server is authoritative, never trusts client position)
+            if (countdownTimer <= 0f)
+            {
+                countdownTimer = 0f;
+                gameStarted = true;
+                BroadcastGameStart();
+            }
+
+            BroadcastTimer(countdownTimer);
+            return; // freeze gameplay until countdown reaches 0
+        }
+
+        // game logic only runs after countdown is over
+        if (dt <= 0 || dt > 0.25f) return;
+
+        // paddle movement
         if (p1Input.MoveUp && p1Y >= 167) p1Y -= PaddleSpeed * dt;
         if (p1Input.MoveDown && p1Y <= 455) p1Y += PaddleSpeed * dt;
         if (p2Input.MoveUp && p2Y >= 167) p2Y -= PaddleSpeed * dt;
@@ -162,7 +187,8 @@ public class Program
             ResetBall();
         }
 
-        UpdateCountdown();
+        // UpdateCountdown();
+        ClockTimer();
 
 
         BroadcastState();
@@ -182,23 +208,7 @@ public class Program
             ballVelY *= scale;
         }
     }
-    private static void UpdateCountdown()
-    {
-        
-        double currentTime = stopwatch.Elapsed.TotalSeconds;
-        double dt = currentTime - lastTime;
-        lastTime = currentTime;
 
-        countdownTimer -= dt;
-
-        if (countdownTimer <= 0)
-        {
-            countdownTimer = 0;
-            BroadcastGameStart();
-        }
-        BroadcastTimer(countdownTimer);
-
-    }
     private static bool RectsIntersect(float ax, float ay, float aw, float ah, float bx, float by, float bw, float bh)
     {
         return ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
@@ -214,6 +224,22 @@ public class Program
         ballVelY = BaseBallSpeed * yDir;
         wasCollidingP1 = false;
         wasCollidingP2 = false;
+    }
+    private static void ClockTimer()
+    {
+        matchStopwatch.Start();
+        double currentTime = matchStopwatch.Elapsed.TotalSeconds;
+        double dt = currentTime - lastMatchTime;
+        lastMatchTime = currentTime;
+
+        clock -= dt;
+        BroadcastClock(clock);
+        if (clock <= 0)
+        {
+            clock = 0;
+            server.Stop();
+        }
+
     }
 
     private static void BroadcastTimer(double time)
@@ -258,6 +284,15 @@ public class Program
         var packet = new GoalScoredPacket { ScoringPlayer = scoringPlayer, Player1Score = p1Score, Player2Score = p2Score };
         var writer = new NetDataWriter();
         writer.Put((byte)PacketType.GoalScored);
+        packet.Serialize(writer);
+        server.SendToAll(writer, DeliveryMethod.ReliableOrdered);
+    }
+
+    private static void BroadcastClock(double time)
+    {
+        var packet = new ClockPacket { Time = time };
+        var writer = new NetDataWriter();
+        writer.Put((byte)PacketType.ClockPacket);
         packet.Serialize(writer);
         server.SendToAll(writer, DeliveryMethod.ReliableOrdered);
     }

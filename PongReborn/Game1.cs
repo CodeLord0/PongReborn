@@ -35,7 +35,7 @@ public class Game1 : Game
 
     public SpriteFont gameFont;
 
-    public double timer = 20;
+    public double timer = 120;
 
     public Song backSong;
     public SoundEffect effect;
@@ -157,13 +157,6 @@ public class Game1 : Game
             Exit();
         }
         // 2. If we are still waiting or counting down, stop here
-        if (!networkClient.isGamePlaying)
-        {
-            base.Update(gameTime);
-            // You can update UI animations or render text here, 
-            // but do NOT run player movement or gameplay code.
-            return;
-        }
 
 
         if (networkClient.MyPlayerNumber == 0)
@@ -227,7 +220,6 @@ public class Game1 : Game
             ball.velocity.X = networkClient.BallVelX;
             ball.velocity.Y = networkClient.BallVelY;
 
-            timer -= gameTime.ElapsedGameTime.TotalSeconds;
         }
 
         base.Update(gameTime);
@@ -295,9 +287,10 @@ public class Game1 : Game
             0f
         );
 
+        //clock
         _spriteBatch.DrawString(
             gameFont,
-            Math.Floor(timer).ToString(),
+            Math.Floor(networkClient.ClockTime).ToString(),
             new Vector2(382, 20),
             Color.White,
             0f,
@@ -307,7 +300,7 @@ public class Game1 : Game
             0f
         );
 
-        if (networkClient.time != 0)
+        if (!networkClient.isGamePlaying)
         {
             // couuntdown at start
             _spriteBatch.DrawString(

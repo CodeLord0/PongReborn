@@ -25,6 +25,7 @@ public class NetworkClient
     public event Action<int>? OnGoalScored;
 
     public double time;
+    public double ClockTime;
 
     public bool IsConnected => serverPeer != null && serverPeer.ConnectionState == ConnectionState.Connected;
     public bool isGamePlaying = false;
@@ -115,11 +116,18 @@ public class NetworkClient
             case PacketType.GameStartPacket:
                 var gameStartPacket = new GameStartPacket();
                 gameStartPacket.Deserialize(reader);
+                isGamePlaying = true; // Set the flag to indicate the game has started
 
                 // Switch your game state to active play
-                isGamePlaying = true;
                 Console.WriteLine("Game has officially started!");
                 break;
+
+            case PacketType.ClockPacket:
+                var clockPacket = new ClockPacket();
+                clockPacket.Deserialize(reader);
+                ClockTime = clockPacket.Time;
+                break;
+                // Update your game clock or timer with clockPacket.Time
         }
 
         reader.Recycle();
